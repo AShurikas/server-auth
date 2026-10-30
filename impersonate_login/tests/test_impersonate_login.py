@@ -16,12 +16,15 @@ class TestImpersonateLogin(HttpCase):
         super().setUpClass()
         cls.demo_login = "impersonate_demo"
         cls.demo_password = "demo"
-        # Admin always exists; ensure it can impersonate and has a known password
+        # Admin always exists; ensure it can impersonate
+        # and has a known password
         cls.admin_user = cls.env.ref("base.user_admin")
         # Make sure admin can use the feature (group check in session info)
         group_imp = cls.env.ref("impersonate_login.group_impersonate_login")
         if group_imp not in cls.admin_user.group_ids:
-            cls.admin_user.write({"group_ids": [fields.Command.link(group_imp.id)]})
+            cls.admin_user.write(
+                {"group_ids": [fields.Command.link(group_imp.id)]}
+            )
 
         group_user = cls.env.ref("base.group_user")
         contact_creation = cls.env.ref("base.group_partner_manager")
@@ -35,7 +38,9 @@ class TestImpersonateLogin(HttpCase):
                     "login": cls.demo_login,
                     "password": cls.demo_password,
                     "group_ids": [
-                        fields.Command.set([group_user.id, contact_creation.id])
+                        fields.Command.set(
+                            [group_user.id, contact_creation.id]
+                        )
                     ],
                 }
             )
@@ -44,7 +49,9 @@ class TestImpersonateLogin(HttpCase):
                 {"password": cls.demo_password}
             )
             if group_user not in cls.demo_user.group_ids:
-                cls.demo_user.write({"group_ids": [fields.Command.link(group_user.id)]})
+                cls.demo_user.write(
+                    {"group_ids": [fields.Command.link(group_user.id)]}
+                )
             if contact_creation not in cls.demo_user.group_ids:
                 cls.demo_user.write(
                     {"group_ids": [fields.Command.link(contact_creation.id)]}
@@ -89,7 +96,9 @@ class TestImpersonateLogin(HttpCase):
     def _get_session_info(self):
         response = self.url_open(
             "/web/session/get_session_info",
-            data=json.dumps(dict(jsonrpc="2.0", method="call", id=str(uuid4()))),
+            data=json.dumps(
+                dict(jsonrpc="2.0", method="call", id=str(uuid4()))
+            ),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(response.status_code, 200)
@@ -139,7 +148,8 @@ class TestImpersonateLogin(HttpCase):
             data = self._impersonate_user(self.demo_user)
         result = data["error"]
         self.assertEqual(
-            result["data"]["message"], "You are already Logged as another user."
+            result["data"]["message"],
+            "You are already Logged as another user.",
         )
 
         # Back to original user
@@ -202,7 +212,8 @@ class TestImpersonateLogin(HttpCase):
             data = self._impersonate_user(self.admin_user)
         result = data["error"]
         self.assertEqual(
-            result["data"]["message"], "You are already Logged as another user."
+            result["data"]["message"],
+            "You are already Logged as another user.",
         )
 
         # Back to original user
@@ -350,7 +361,7 @@ class TestImpersonateLogin(HttpCase):
         config_restrict = (
             self.env["ir.config_parameter"]
             .sudo()
-            .get_param("impersonate_login.restrict_impersonate_admin_settings")
+            .get_bool("impersonate_login.restrict_impersonate_admin_settings")
         )
         self.assertTrue(config_restrict)
 

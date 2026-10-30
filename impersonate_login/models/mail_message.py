@@ -45,7 +45,9 @@ class Message(models.Model):
                 and rec.impersonated_author_id
             ):
                 current_partner = (
-                    self.env["res.users"].browse(request.session.uid).partner_id
+                    self.env["res.users"]
+                    .browse(request.session.uid)
+                    .partner_id
                 )
                 additional_info = self.env._(
                     "Logged in as %(name)s",
@@ -65,7 +67,9 @@ class Message(models.Model):
                 and rec.impersonated_author_id
             ):
                 current_partner = (
-                    self.env["res.users"].browse(request.session.uid).partner_id
+                    self.env["res.users"]
+                    .browse(request.session.uid)
+                    .partner_id
                 )
                 additional_info = self.env._(
                     "Logged in as %(name)s",

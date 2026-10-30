@@ -7,7 +7,7 @@ import logging
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.http import request
-from odoo.service import security
+from odoo.http.session import update_session_token
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,9 @@ class Users(models.Model):
             config_restrict = (
                 self.env["ir.config_parameter"]
                 .sudo()
-                .get_param("impersonate_login.restrict_impersonate_admin_settings")
+                .get_bool(
+                    "impersonate_login.restrict_impersonate_admin_settings"
+                )
             )
             if config_restrict:
                 admin_settings_group = self.env.ref("base.group_system")
@@ -73,13 +75,13 @@ class Users(models.Model):
                     f"Login as {self._get_partner_name(self.id)}"
                 )
                 # invalidate session token cache as we've changed the uid
-                request.env.registry.clear_cache()
-                request.session.session_token = security.compute_session_token(
-                    request.session, request.env
-                )
+                request.env.transaction.invalidate_ormcache()
+                update_session_token(request.session, request.env)
 
                 # reload the client; open the first available root menu
-                menu = self.env["ir.ui.menu"].search([("parent_id", "=", False)])[:1]
+                menu = self.env["ir.ui.menu"].search(
+                    [("parent_id", "=", False)]
+                )[:1]
                 return {
                     "type": "ir.actions.client",
                     "tag": "reload",
@@ -94,21 +96,23 @@ class Users(models.Model):
                 action = self.env["ir.actions.act_window"]._for_xml_id(
                     "base.action_res_users"
                 )
-                action["views"] = [[self.env.ref("base.view_users_tree").id, "list"]]
+                action["views"] = [
+                    [self.env.ref("base.view_users_tree").id, "list"]
+                ]
                 action["domain"] = [
                     ("id", "!=", self.env.user.id),
                     ("share", "=", False),
                 ]
                 action["target"] = "new"
-                # Provide a styled helper consistent with other apps when list is empty
+                # Provide a styled helper consistent with other apps
                 help_title = self.env._("No users found. Let's create one!")
                 help_body = self.env._(
-                    "Create and manage users that will connect to the system. "
-                    "Users can be deactivated should there be a period of time "
-                    "during which "
-                    "they will/should not connect to the system. "
-                    "You can assign them groups in order to give them specific access "
-                    "to the applications they need to use in the system."
+                    "Create and manage users that will connect to the "
+                    "system. Users can be deactivated should there be a "
+                    "period of time during which they will/should not "
+                    "connect to the system. You can assign them groups in "
+                    "order to give them specific access to the applications "
+                    "they need to use in the system."
                 )
                 action["help"] = f"<p>{help_title}</p><p>{help_body}</p>"
                 return action
@@ -127,19 +131,19 @@ class Users(models.Model):
                     }
                 )
                 # invalidate session token cache as we've changed the uid
-                request.env.registry.clear_cache()
+                request.env.transaction.invalidate_ormcache()
                 request.session["impersonate_from_uid"] = False
                 request.session["impersonate_log_id"] = False
-                request.session.session_token = security.compute_session_token(
-                    request.session, request.env
-                )
+                update_session_token(request.session, request.env)
                 logger.info(
                     f"IMPERSONATE: {self._get_partner_name(from_uid)} "
                     f"Logout as {self._get_partner_name(self.env.uid)}"
                 )
 
             # reload the client; open the first available root menu
-            menu = self.env["ir.ui.menu"].search([("parent_id", "=", False)])[:1]
+            menu = self.env["ir.ui.menu"].search(
+                [("parent_id", "=", False)]
+            )[:1]
             return {
                 "type": "ir.actions.client",
                 "tag": "reload",

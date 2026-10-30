@@ -11,7 +11,9 @@ class MailThread(models.AbstractModel):
 
     def _message_compute_author(self, author_id=None, email_from=None):
         if request and request.session.get("impersonate_from_uid"):
-            author = self.env["res.users"].browse(request.session.uid).partner_id
+            author = (
+                self.env["res.users"].browse(request.session.uid).partner_id
+            )
             if author_id == author.id or author_id is None:
                 impersonate_from_author = (
                     self.env["res.users"]

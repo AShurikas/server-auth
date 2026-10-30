@@ -26,7 +26,9 @@ class BaseModel(models.AbstractModel):
             and "create_uid" in self._fields
         ):
             for vals in result_vals_list:
-                vals["create_uid"] = request.session.get("impersonate_from_uid")
+                vals["create_uid"] = request.session.get(
+                    "impersonate_from_uid"
+                )
         return result_vals_list
 
     def write(self, vals):
